@@ -1,0 +1,132 @@
+<!doctype html>
+<html>
+<head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; base-uri 'none'; form-action 'none'">
+<meta charset="utf-8">
+<title>AgentStream</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+body{width:1280px;height:720px;background:#0d1117;color:#e6edf3;overflow:hidden}
+header{padding:18px 32px;border-bottom:1px solid #21262d;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:22px;font-weight:700;color:#4ee6a1}
+.tagline{font-size:12px;color:#8b949e;max-width:600px}
+main{padding:24px 32px}
+.card{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:18px 20px;margin-bottom:18px}
+.card h2{font-size:15px;margin-bottom:12px;color:#c9d1d9}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid #21262d}
+th{color:#8b949e;font-weight:500;font-size:12px}
+.active{color:#4ee6a1;font-weight:600}
+.closed{color:#8b949e;font-weight:600}
+.btn{background:#238636;color:#fff;border:none;padding:8px 14px;border-radius:6px;font-size:13px;cursor:pointer}
+.btn:hover{background:#2ea043}
+.btn-close{background:#da3633;padding:4px 10px;font-size:12px}
+.btn-close:hover{background:#f85149}
+#newPanel{display:none}
+#newPanel label{display:block;font-size:12px;color:#8b949e;margin-bottom:4px}
+#newPanel input{background:#0d1117;border:1px solid #30363d;color:#e6edf3;padding:6px 10px;border-radius:6px;font-size:13px;margin-bottom:12px;width:220px}
+.row-flex{display:flex;gap:24px}
+#settlePanel{display:none}
+#settlePanel .amt{font-size:28px;color:#4ee6a1;font-weight:700}
+footer{position:absolute;bottom:8px;left:32px;font-size:11px;color:#6e7681}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo" data-demo="logo">AgentStream</div>
+  </div>
+  <div class="tagline">AI agents pay each other per-second in USDC for data, compute, and content on Solana</div>
+</header>
+<main>
+  <div class="card">
+    <h2>Live Payment Streams</h2>
+    <table>
+      <thead>
+        <tr><th>Stream</th><th>Rate</th><th>Elapsed</th><th>Spent</th><th>Status</th><th></th></tr>
+      </thead>
+      <tbody id="streamBody">
+        <tr>
+          <td>LLM-Proxy-07 → GPU-Compute-12</td>
+          <td>0.0020 USDC/s</td>
+          <td>00:42</td>
+          <td>$0.0840</td>
+          <td class="active">Active</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>Research-Agent-3 → DataFeed-API</td>
+          <td>0.0015 USDC/s</td>
+          <td>02:15</td>
+          <td>$0.2025</td>
+          <td class="active">Active</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <br>
+    <button class="btn" data-demo="open-stream-btn" onclick="document.getElementById('newPanel').style.display='block'">+ Open New Stream</button>
+  </div>
+
+  <div class="row-flex">
+    <div class="card" id="newPanel" data-demo="new-stream-panel" style="flex:1">
+      <h2>New Stream</h2>
+      <label>From Agent</label>
+      <input value="Agent-X (Caller)" readonly>
+      <label>To Agent / Service</label>
+      <input value="Agent-Y (LLM Proxy)" readonly>
+      <label>Rate</label>
+      <input value="0.0030 USDC / second" readonly>
+      <br>
+      <button class="btn" data-demo="start-stream-btn" onclick="startStream()">Start Streaming</button>
+    </div>
+
+    <div class="card" id="settlePanel" data-demo="settlement-panel" style="flex:1">
+      <h2>Stream Settled</h2>
+      <p style="color:#8b949e;font-size:13px;margin-bottom:6px">Agent-X → Agent-Y</p>
+      <div class="amt" data-demo="settlement-amount" id="settleAmt">$0.0000</div>
+      <p style="color:#8b949e;font-size:12px;margin-top:6px">Funds released proportionally from on-chain escrow.</p>
+    </div>
+  </div>
+</main>
+<footer>Prototype — all data is simulated</footer>
+
+<script>
+let elapsed = 0;
+let rate = 0.003;
+let timer = null;
+
+function startStream(){
+  document.getElementById('newPanel').style.display='none';
+  const tbody = document.getElementById('streamBody');
+  const row = document.createElement('tr');
+  row.id = 'newRow';
+  row.innerHTML = '<td>Agent-X → Agent-Y</td>'+
+    '<td>0.0030 USDC/s</td>'+
+    '<td id="elapsedCell">00:00</td>'+
+    '<td id="spentCell">$0.0000</td>'+
+    '<td class="active">Active</td>'+
+    '<td><button class="btn btn-close" data-demo="close-stream-btn" onclick="closeStream()">Close</button></td>';
+  tbody.appendChild(row);
+  elapsed = 0;
+  timer = setInterval(()=>{
+    elapsed++;
+    const m = String(Math.floor(elapsed/60)).padStart(2,'0');
+    const s = String(elapsed%60).padStart(2,'0');
+    document.getElementById('elapsedCell').textContent = m+':'+s;
+    document.getElementById('spentCell').textContent = '$'+(elapsed*rate).toFixed(4);
+  },1000);
+}
+
+function closeStream(){
+  clearInterval(timer);
+  const row = document.getElementById('newRow');
+  row.cells[4].textContent = 'Closed';
+  row.cells[4].className = 'closed';
+  row.cells[5].innerHTML = '';
+  const finalAmt = (elapsed*rate).toFixed(4);
+  document.getElementById('settleAmt').textContent = '$'+finalAmt;
+  document.getElementById('settlePanel').style.display='block';
+}
+</script>
+</body>
+</html>
